@@ -41,8 +41,9 @@ jobs:
         name: log-file
         path: log.txt
 
-    # 7. Wyślij powiadomienie mailowe
-    - name: Send email
+    # 7. Send email only if new announcements
+    - name: Send email if new announcements
+      if: success() && steps.run_licytacje_script.outcome == 'success'  # opcjonalnie
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
@@ -52,6 +53,6 @@ jobs:
         subject: "Nowe obwieszczenia o licytacjach"
         body: "Sprawdź logi w załączniku."
         to: "twoj_email@gmail.com"
-        from: ${{ secrets.GMAIL_USER }}  # <- musi być wypełnione
+        from: "twoj_email@gmail.com"  # <- jawnie wpisany
         secure: true
         attachments: log.txt
