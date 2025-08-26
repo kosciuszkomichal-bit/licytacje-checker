@@ -1,4 +1,4 @@
-Name: Licytacje Checker
+name: Licytacje Checker
 
 on:
   schedule:
