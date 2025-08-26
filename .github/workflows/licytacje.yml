@@ -2,7 +2,7 @@ name: Licytacje Checker
 
 on:
   schedule:
-    - cron: '0 9 * * 1' # uruchamiaj co poniedziałek o 09:00
+    - cron: '0 9 * * 1' # co poniedziałek o 09:00
   workflow_dispatch: # możliwość ręcznego uruchomienia
 
 jobs:
@@ -14,21 +14,21 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # 2. Upewnij się, że log.txt istnieje
-    - name: Ensure log.txt exists
-      run: touch log.txt
-
-    # 3. Setup Python
+    # 2. Setup Python
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
-    # 4. Instalacja zależności (jeśli masz requirements.txt)
+    # 3. Instalacja zależności
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install requests beautifulsoup4
+
+    # 4. Upewnij się, że log.txt istnieje
+    - name: Ensure log.txt exists
+      run: touch log.txt
 
     # 5. Uruchomienie skryptu
     - name: Run licytacje script
