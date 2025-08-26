@@ -22,9 +22,10 @@ def get_hash(data):
     return hashlib.sha256("\n".join(data).encode("utf-8")).hexdigest()
 
 def main():
+    # Testowy zapis – żeby sprawdzić, czy workflow w ogóle działa
     with open("log.txt", "a") as f:
-    f.write("[TEST] Skrypt działa!\n")
-    
+        f.write("[TEST] Skrypt działa!\n")
+
     announcements = fetch_announcements()
     current_hash = get_hash(announcements)
 
