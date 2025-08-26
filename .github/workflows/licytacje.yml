@@ -52,6 +52,6 @@ jobs:
         subject: "Nowe obwieszczenia o licytacjach"
         body: "Sprawdź logi w załączniku."
         to: "twoj_email@gmail.com"
-        from: ${{ secrets.GMAIL_USER }}
+        from: ${{ secrets.GMAIL_USER }}  # <- musi być wypełnione
         secure: true
         attachments: log.txt
