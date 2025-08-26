@@ -1,47 +1,57 @@
-name: Licytacje Checker
+ame: Licytacje Checker
 
 on:
   schedule:
-    # Co tydzień w poniedziałek o 08:00
-    - cron: '0 8 * * 1'
-  workflow_dispatch: # pozwala uruchomić ręcznie
+    - cron: '0 9 * * 1' # uruchamiaj co poniedziałek o 09:00
+  workflow_dispatch: # możliwość ręcznego uruchomienia
 
 jobs:
   check-licytacje:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/upload-artifact@v4
+    # 1. Checkout repo
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/upload-artifact@v4
+    # 2. Upewnij się, że log.txt istnieje
+    - name: Ensure log.txt exists
+      run: touch log.txt
+
+    # 3. Setup Python
+    - name: Setup Python
+      uses: actions/setup-python@v4
       with:
-        python-version: "3.10"
+        python-version: '3.10'
 
+    # 4. Instalacja zależności (jeśli masz requirements.txt)
     - name: Install dependencies
-      run: pip install -r requirements.txt
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: Run script
+    # 5. Uruchomienie skryptu
+    - name: Run licytacje script
       run: python licytacje.py
 
+    # 6. Upload log.txt jako artifact
     - name: Upload log
       uses: actions/upload-artifact@v4
       with:
         name: log-file
         path: log.txt
 
-    - name: Test output
-      run: echo "[TEST] Skrypt działa! Sprawdź log.txt lub Artifacts"
-
-    - name: Send email notification
-      if: always() # można zmienić na warunek, np. tylko gdy nowe obwieszczenia
+    # 7. Wyślij powiadomienie mailowe
+    - name: Send email
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
         server_port: 465
         username: ${{ secrets.GMAIL_USER }}
         password: ${{ secrets.GMAIL_APP_PASSWORD }}
-        subject: "Nowe obwieszczenia licytacyjne"
-        body: "Skrypt wykrył zmiany lub został uruchomiony. Sprawdź log.txt w GitHub Actions Artifacts."
-        to: "twoj_email@gmail.com"  
+        subject: "Nowe obwieszczenia o licytacjach"
+        body: "Sprawdź logi w załączniku."
+        to: "twoj_email@gmail.com"
+        from: ${{ secrets.GMAIL_USER }}
+        secure: true
+        attachments: log.txt
