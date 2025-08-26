@@ -52,7 +52,7 @@ jobs:
         password: ${{ secrets.GMAIL_APP_PASSWORD }}
         subject: "Nowe obwieszczenia o licytacjach"
         body: "Sprawdź logi w załączniku."
-        to: "twoj_email@gmail.com"
-        from: "twoj_email@gmail.com"  # <- jawnie wpisany
+        to: "kosciuszko.michal@gmail.com"
+        from: "kosciuszko.michal@gmail.com"  # <- jawnie wpisany
         secure: true
         attachments: log.txt
