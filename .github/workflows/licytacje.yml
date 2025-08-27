@@ -2,57 +2,61 @@ name: Licytacje Checker
 
 on:
   schedule:
-    - cron: '0 9 * * 1' # co poniedziałek o 09:00
-  workflow_dispatch: # możliwość ręcznego uruchomienia
+    - cron: "0 8 * * 1"   # co poniedziałek o 8:00 rano
+  workflow_dispatch:       # możliwość ręcznego uruchomienia
 
 jobs:
-  check-licytacje:
+  check:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout repo
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    # 2. Setup Python
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    # 3. Instalacja zależności
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests beautifulsoup4
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
 
-    # 4. Upewnij się, że log.txt istnieje
-    - name: Ensure log.txt exists
-      run: touch log.txt
+      - name: Run script
+        run: python licytacje.py
 
-    # 5. Uruchomienie skryptu
-    - name: Run licytacje script
-      run: python licytacje.py
+      - name: Commit updated state.txt
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add state.txt
+          git commit -m "Update state.txt" || echo "No changes to commit"
+          git push
 
-    # 6. Upload log.txt jako artifact
-    - name: Upload log
-      uses: actions/upload-artifact@v4
-      with:
-        name: log-file
-        path: log.txt
+      - name: Check if new announcements found
+        id: check
+        run: |
+          if grep -q "Nowe obwieszczenia!" log.txt; then
+            echo "new=true" >> $GITHUB_OUTPUT
+          else
+            echo "new=false" >> $GITHUB_OUTPUT
+          fi
 
-    # 7. Send email only if new announcements
-    - name: Send email if new announcements
-      if: success() && steps.run_licytacje_script.outcome == 'success'  # opcjonalnie
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 465
-        username: ${{ secrets.GMAIL_USER }}
-        password: ${{ secrets.GMAIL_APP_PASSWORD }}
-        subject: "Nowe obwieszczenia o licytacjach"
-        body: "Sprawdź logi w załączniku."
-        to: "kosciuszko.michal@gmail.com"
-        from: "kosciuszko.michal@gmail.com"  # <- jawnie wpisany
-        secure: true
-        attachments: log.txt
+      - name: Send email if new announcements
+        if: steps.check.outputs.new == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.GMAIL_USER }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "Nowe obwieszczenia o licytacjach!"
+          body: "Na stronie sądu pojawiły się nowe obwieszczenia. Szczegóły w załączonym log.txt."
+          to: "kosciuszko.michal@gmail.com"
+          from: "kosciuszko.michal@gmail.com"
+          secure: true
+          attachments: log.txt
+
+      - name: Upload log
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-file
+          path: log.txt
