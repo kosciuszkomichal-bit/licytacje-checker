@@ -2,7 +2,7 @@ name: Licytacje Checker
 
 on:
   schedule:
-    - cron: "0 8 * * 1"   # co poniedziałek o 8:00 rano
+    - cron: "0 8 * * 1,4"   # co poniedziałek o 8:00 rano
   workflow_dispatch:       # możliwość ręcznego uruchomienia
 
 jobs:
