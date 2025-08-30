@@ -1,55 +1,75 @@
-import os
-from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import hashlib
+import os
+from datetime import datetime
 
-STATE_FILE = "state.txt"
+# --- Konfiguracja źródeł do sprawdzania ---
+URLS = {
+    "pruszkow": [
+        "https://pruszkow.sr.gov.pl/obwieszczenia-o-licytacjach,m,mg,59"
+    ],
+    "warszawa": [
+        f"https://www.mazowieckie.kas.gov.pl/izba-administracji-skarbowej-w-warszawie/ogloszenia/obwieszczenia-o-licytacjach{i}" for i in range(1, 13)
+    ],
+    "grodziskmazowiecki": [
+        "https://www.mazowieckie.kas.gov.pl/urzad-skarbowy-w-grodzisku-mazowieckim/ogloszenia/obwieszczenia-o-licytacji"
+    ],
+    "pruszkow": [
+        "https://www.mazowieckie.kas.gov.pl/urzad-skarbowy-w-pruszkowie/ogloszenia/obwieszczenia-o-licytacji"
+    ]
+}
+
 LOG_FILE = "log.txt"
-URL = "https://pruszkow.sr.gov.pl/obwieszczenia-o-licytacjach,m,mg,59"
 
-def fetch_announcements():
-    r = requests.get(URL)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
-    # przykładowa selekcja obwieszczeń, dopasuj do struktury strony
-    items = [li.get_text(strip=True) for li in soup.select(".listing li")]
-    return items
+# --- Pobieranie ogłoszeń z listy URL ---
+def fetch_announcements(urls):
+    announcements = []
+    for url in urls:
+        try:
+            r = requests.get(url, timeout=15)
+            r.raise_for_status()
+            soup = BeautifulSoup(r.text, "html.parser")
+            
+            # 🔹 tu trzeba dostosować selektor pod stronę (np. <a>, <li>, <div>)
+            for item in soup.find_all("a"):
+                text = item.get_text(strip=True)
+                if text:
+                    announcements.append(text)
+        except Exception as e:
+            announcements.append(f"[BŁĄD przy pobieraniu {url}: {e}]")
+    return announcements
 
-def get_hash(items):
-    joined = "\n".join(items)
-    return hashlib.sha256(joined.encode("utf-8")).hexdigest()
+# --- Hash listy ogłoszeń ---
+def get_hash(announcements):
+    content = "\n".join(announcements)
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
+# --- Główna logika ---
 def main():
-    # utworzenie log.txt jeśli nie istnieje
-    if not os.path.exists(LOG_FILE):
-        with open(LOG_FILE, "w") as f:
-            f.write(f"[{datetime.now()}] [TEST] Skrypt działa!\n")
+    for court, urls in URLS.items():
+        announcements = fetch_announcements(urls)
+        current_hash = get_hash(announcements)
 
-    announcements = fetch_announcements()
-    current_hash = get_hash(announcements)
+        state_file = f"state_{court}.txt"
 
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, "r") as f:
-            old_hash = f.read().strip()
-    else:
-        old_hash = ""
-        # jeśli pierwszy raz, zapisujemy hash
-        with open(STATE_FILE, "w") as f:
-            f.write(current_hash)
-        return  # zakończ pierwszy run, log już utworzony
+        if os.path.exists(state_file):
+            with open(state_file, "r") as f:
+                old_hash = f.read().strip()
+        else:
+            old_hash = ""
 
-    # jeśli hash się zmienił
-    if current_hash != old_hash:
-        with open(LOG_FILE, "a") as log:
-            log.write(f"[{datetime.now()}] Nowe obwieszczenia!\n")
-            for a in announcements:
-                log.write(f"- {a}\n")
-        with open(STATE_FILE, "w") as f:
-            f.write(current_hash)
-    else:
-        with open(LOG_FILE, "a") as log:
-            log.write(f"[{datetime.now()}] Brak zmian.\n")
+        if current_hash != old_hash:
+            with open(LOG_FILE, "a") as log:
+                log.write(f"[{datetime.now()}] Nowe obwieszczenia ({court})!\n")
+                for a in announcements:
+                    log.write(f"- {a}\n")
+                log.write("\n")
+            with open(state_file, "w") as f:
+                f.write(current_hash)
+        else:
+            with open(LOG_FILE, "a") as log:
+                log.write(f"[{datetime.now()}] Brak zmian ({court}).\n")
 
 if __name__ == "__main__":
     main()
