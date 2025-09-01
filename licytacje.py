@@ -6,7 +6,7 @@ from datetime import datetime
 
 # --- Konfiguracja źródeł do sprawdzania ---
 URLS = {
-    "pruszkow": [
+    "pruszkow sad": [
         "https://pruszkow.sr.gov.pl/obwieszczenia-o-licytacjach,m,mg,59"
     ],
     "warszawa": [
