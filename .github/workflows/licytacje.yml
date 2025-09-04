@@ -28,9 +28,9 @@ jobs:
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
-        server_port: 587
+        server_port: 465        # zmienione z 587 na 465
         username: ${{ secrets.MAIL_USERNAME }}
-        password: ${{ secrets.MAIL_PASSWORD }}
+        password: ${{ secrets.GMAIL_APP_PASSWORD }}
         subject: "Raport z monitoringu licytacji"
         to: "kosciuszko.michal@gmail.com"
         from: "Bot Licytacje <kosciuszko.michal@gmail.com>"
@@ -38,6 +38,7 @@ jobs:
           Raport z działania skryptu.
           Zobacz plik log.txt w repozytorium.
       continue-on-error: true
+
 
     - name: Upload log
       uses: actions/upload-artifact@v4
