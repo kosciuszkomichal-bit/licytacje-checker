@@ -22,54 +22,45 @@ URLS = {
 
 LOG_FILE = "log.txt"
 
-# --- Pobieranie ogłoszeń z listy URL ---
-def fetch_announcements(urls):
-    announcements = []
+# --- Pobieranie treści strony ---
+def fetch_content(urls):
+    content = ""
     for url in urls:
         try:
             r = requests.get(url, timeout=15)
             r.raise_for_status()
             soup = BeautifulSoup(r.text, "html.parser")
-            
-            # 🔹 tu trzeba dostosować selektor pod stronę (np. <a>, <li>, <div>)
-            for item in soup.find_all("a"):
-                text = item.get_text(strip=True)
-                if text:
-                    announcements.append(text)
+            content += soup.get_text(" ", strip=True) + "\n"
         except Exception as e:
-            announcements.append(f"[BŁĄD przy pobieraniu {url}: {e}]")
-    return announcements
+            content += f"[BŁĄD przy pobieraniu {url}: {e}]\n"
+    return content
 
-# --- Hash listy ogłoszeń ---
-def get_hash(announcements):
-    content = "\n".join(announcements)
-    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+# --- Tworzenie hash ---
+def get_hash(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
 
 # --- Główna logika ---
 def main():
-    for court, urls in URLS.items():
-        announcements = fetch_announcements(urls)
-        current_hash = get_hash(announcements)
+    with open(LOG_FILE, "w", encoding="utf-8") as log:  # zawsze nadpisuje log.txt
+        for court, urls in URLS.items():
+            content = fetch_content(urls)
+            current_hash = get_hash(content)
 
-        state_file = f"state_{court}.txt"
+            state_file = f"state_{court}.txt"
 
-        if os.path.exists(state_file):
-            with open(state_file, "r") as f:
-                old_hash = f.read().strip()
-        else:
-            old_hash = ""
+            if os.path.exists(state_file):
+                with open(state_file, "r") as f:
+                    old_hash = f.read().strip()
+            else:
+                old_hash = ""
 
-        if current_hash != old_hash:
-            with open(LOG_FILE, "a") as log:
-                log.write(f"[{datetime.now()}] Nowe obwieszczenia ({court})!\n")
-                for a in announcements:
-                    log.write(f"- {a}\n")
-                log.write("\n")
-            with open(state_file, "w") as f:
-                f.write(current_hash)
-        else:
-            with open(LOG_FILE, "a") as log:
-                log.write(f"[{datetime.now()}] Brak zmian ({court}).\n")
+            if current_hash != old_hash:
+                log.write(f"{court}: ZMIANA\n")
+                with open(state_file, "w") as f:
+                    f.write(current_hash)
+            else:
+                log.write(f"{court}: brak zmian\n")
 
 if __name__ == "__main__":
     main()
